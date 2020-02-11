@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  CloudFrontBucketName:
+    Type: String
+    Description: S3 Bucket name for CloudFront
+    MinLength: 3
+    MaxLength: 50
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 307Role
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - edgelambda.amazonaws.com
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CloudFrontBucketGetItemPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub arn:aws:s3:::${CloudFrontBucketName}/*
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 307EdgeFunction
+      CodeUri: dist/edge
+      Handler: main.handler
+      Runtime: nodejs10.x
+      MemorySize: 256
+      Timeout: 5
+      Role: !GetAtt LambdaRole.Arn
+      AutoPublishAlias: current
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn:
+      - LambdaFunction
+    Properties:
+      RetentionInDays: 1
+      LogGroupName: !Sub "/aws/lambda/${LambdaFunction}"
+Outputs:
+  LambdaFunctionArn:
+    Description: "Arn"
+    Value: !GetAtt LambdaFunction.Arn
+  LambdaFunctionVersion:
+    Description: "Version"
+    Value: !Ref LambdaFunction.Version

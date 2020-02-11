@@ -1,0 +1,6 @@
+h1:after {
+  content: "Hello from style.css!";
+  color: white;
+  background-color: black;
+  font-weight: bold;
+}

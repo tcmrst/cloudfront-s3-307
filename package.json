@@ -1,0 +1,35 @@
+{
+  "name": "cloudfront-s3-307",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "run-s build deploy:edge deploy:cloudfront upload:cloudfront invalidate:cloudfront",
+    "build": "webpack --config webpack.edge.js",
+    "deploy:edge": "sam package --template-file template-edge.yaml --output-template-file packaged-edge.yaml --s3-bucket $(jq -r .DeployEdgeBucketName parameters.json) && sam deploy --no-fail-on-empty-changeset --template-file packaged-edge.yaml --stack-name $(jq -r .StackName parameters.json) --region us-east-1 --capabilities CAPABILITY_NAMED_IAM --parameter-overrides $(jq -r 'to_entries[] | \"\\(.key)=\\(.value)\"' parameters.json)",
+    "deploy:cloudfront": "aws cloudformation deploy --no-fail-on-empty-changeset --template-file template.yaml --stack-name $(jq -r .StackName parameters.json) --capabilities CAPABILITY_IAM --parameter-overrides $(jq -r 'to_entries[] | \"\\(.key)=\\(.value)\"' parameters.json) EdgeFunctionArn=$(aws cloudformation describe-stacks --stack-name $(jq -r .StackName parameters.json) --region us-east-1 | jq -r '.Stacks[].Outputs[] | select(.OutputKey==\"LambdaFunctionVersion\") | .OutputValue')",
+    "upload:cloudfront": "aws s3 sync public s3://$(jq -r .CloudFrontBucketName parameters.json)",
+    "invalidate:cloudfront": "aws cloudfront create-invalidation --distribution-id $(aws cloudformation describe-stacks --output json --stack-name $(jq -r .StackName parameters.json) | jq -r '.Stacks[].Outputs[] | select(.OutputKey==\"CloudFrontDistributionId\") | .OutputValue') --paths '/*'",
+    "show-url": "aws cloudformation describe-stacks --output json --stack-name $(jq -r .StackName parameters.json) | jq -r '.Stacks[].Outputs[] | select(.OutputKey==\"URL\") | .OutputValue'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.40",
+    "@types/lodash": "^4.14.149",
+    "@types/mime": "^2.0.1",
+    "@types/node": "^13.7.0",
+    "aws-lambda": "^1.0.5",
+    "aws-sdk": "^2.612.0",
+    "lodash": "^4.17.15",
+    "mime": "^2.4.4",
+    "npm-run-all": "^4.1.5",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.5",
+    "webpack": "^4.41.5"
+  },
+  "devDependencies": {
+    "webpack-cli": "^3.3.10"
+  }
+}

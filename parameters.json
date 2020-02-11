@@ -1,0 +1,7 @@
+{
+  "StackName": "cf-s3-307",
+  "DeployBucketName": "OriginRegionと同じリージョンのバケット 事前に作成",
+  "DeployEdgeBucketName": "us-east-1のバケット 事前に作成",
+  "CloudFrontBucketName": "今まで一度も作成されてないバケット 作成は不要です",
+  "OriginRegion": "ap-northeast-1"
+}
